@@ -53,6 +53,12 @@ CREATE TABLE OrderItems (
   CONSTRAINT FK_OrderItems_Products FOREIGN KEY (product_id) REFERENCES Products(id)
 );
 
+-- Rubros (with auto-increment ID)
+CREATE TABLE Rubros (
+  ID_Rubro INT IDENTITY(1,1) PRIMARY KEY,
+  Descripcion VARCHAR(40) NOT NULL
+);
+
 -- Permissions and Users
 CREATE TABLE Permissions (
   id INT IDENTITY(1,1) PRIMARY KEY,

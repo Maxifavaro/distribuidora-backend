@@ -11,18 +11,17 @@ router.get('/top-products', auth, async (req, res) => {
       .input('days', sql.Int, 30)
       .query(`
         SELECT 
-          p.id,
-          p.name,
-          p.sku,
-          SUM(oi.quantity) as total_quantity,
-          SUM(oi.quantity * oi.unit_price) as total_revenue,
-          COUNT(DISTINCT o.id) as order_count
-        FROM Products p
-        INNER JOIN OrderItems oi ON p.id = oi.product_id
-        INNER JOIN Orders o ON oi.order_id = o.id
-        WHERE o.order_type = 'client'
-          AND o.created_at >= DATEADD(day, -@days, GETDATE())
-        GROUP BY p.id, p.name, p.sku
+          p.ID_Producto as id,
+          p.Descripcion as name,
+          p.Pr_Ean13 as sku,
+          SUM(dt.Cantidad) as total_quantity,
+          SUM(dt.Cantidad * dt.PrecioUnitario) as total_revenue,
+          COUNT(DISTINCT tp.ID_TomaPedido) as order_count
+        FROM Productos p
+        INNER JOIN DetalleTomadePedido dt ON p.ID_Producto = dt.ID_Producto
+        INNER JOIN TomadePedido tp ON dt.ID_TomaPedido = tp.ID_TomaPedido
+        WHERE tp.Fecha >= DATEADD(day, -@days, GETDATE())
+        GROUP BY p.ID_Producto, p.Descripcion, p.Pr_Ean13
         ORDER BY total_quantity DESC
       `);
     res.json(result.recordset);
@@ -32,7 +31,7 @@ router.get('/top-products', auth, async (req, res) => {
   }
 });
 
-// GET /api/statistics/top-providers - Proveedores que más compraron últimos 30 días
+// GET /api/statistics/top-providers - Proveedores de productos más vendidos últimos 30 días
 router.get('/top-providers', auth, async (req, res) => {
   try {
     const pool = await poolPromise;
@@ -40,19 +39,19 @@ router.get('/top-providers', auth, async (req, res) => {
       .input('days', sql.Int, 30)
       .query(`
         SELECT 
-          pr.id,
-          pr.name,
-          pr.contact,
-          pr.phone,
-          COUNT(DISTINCT o.id) as order_count,
-          SUM(o.total_amount) as total_amount,
-          SUM(oi.quantity) as total_items
-        FROM Providers pr
-        INNER JOIN Orders o ON pr.id = o.provider_id
-        INNER JOIN OrderItems oi ON o.id = oi.order_id
-        WHERE o.order_type = 'supplier'
-          AND o.created_at >= DATEADD(day, -@days, GETDATE())
-        GROUP BY pr.id, pr.name, pr.contact, pr.phone
+          pr.ID_Proveedor as id,
+          pr.RazonSocial as name,
+          pr.Contacto as contact,
+          pr.Telefono as phone,
+          COUNT(DISTINCT p.ID_Producto) as product_count,
+          SUM(dt.Cantidad * dt.PrecioUnitario) as total_amount,
+          SUM(dt.Cantidad) as total_items
+        FROM Proveedores pr
+        INNER JOIN Productos p ON pr.ID_Proveedor = p.ID_Proveedor
+        INNER JOIN DetalleTomadePedido dt ON p.ID_Producto = dt.ID_Producto
+        INNER JOIN TomadePedido tp ON dt.ID_TomaPedido = tp.ID_TomaPedido
+        WHERE tp.Fecha >= DATEADD(day, -@days, GETDATE())
+        GROUP BY pr.ID_Proveedor, pr.Razon_Social, pr.Contacto, pr.Telefono
         ORDER BY total_amount DESC
       `);
     res.json(result.recordset);
@@ -70,19 +69,18 @@ router.get('/top-clients', auth, async (req, res) => {
       .input('days', sql.Int, 30)
       .query(`
         SELECT 
-          c.id,
-          c.name,
-          c.phone,
-          c.email,
-          COUNT(DISTINCT o.id) as order_count,
-          SUM(o.total_amount) as total_amount,
-          SUM(oi.quantity) as total_items
-        FROM Clients c
-        INNER JOIN Orders o ON c.id = o.client_id
-        INNER JOIN OrderItems oi ON o.id = oi.order_id
-        WHERE o.order_type = 'client'
-          AND o.created_at >= DATEADD(day, -@days, GETDATE())
-        GROUP BY c.id, c.name, c.phone, c.email
+          c.ID_Cliente as id,
+          c.Nombre + ' ' + ISNULL(c.Apellido, '') as name,
+          c.Telefono as phone,
+          c.Correo as email,
+          COUNT(DISTINCT tp.ID_TomaPedido) as order_count,
+          SUM(tp.Total) as total_amount,
+          SUM(dt.Cantidad) as total_items
+        FROM Clientes c
+        INNER JOIN TomadePedido tp ON c.ID_Cliente = tp.ID_Cliente
+        INNER JOIN DetalleTomadePedido dt ON tp.ID_TomaPedido = dt.ID_TomaPedido
+        WHERE tp.Fecha >= DATEADD(day, -@days, GETDATE())
+        GROUP BY c.ID_Cliente, c.Nombre, c.Apellido, c.Telefono, c.Correo
         ORDER BY total_amount DESC
       `);
     res.json(result.recordset);
@@ -102,18 +100,17 @@ router.get('/client-products/:clientId', auth, async (req, res) => {
       .input('days', sql.Int, 30)
       .query(`
         SELECT 
-          p.id,
-          p.name,
-          p.sku,
-          SUM(oi.quantity) as total_quantity,
-          SUM(oi.quantity * oi.unit_price) as total_spent
-        FROM Products p
-        INNER JOIN OrderItems oi ON p.id = oi.product_id
-        INNER JOIN Orders o ON oi.order_id = o.id
-        WHERE o.client_id = @clientId
-          AND o.order_type = 'client'
-          AND o.created_at >= DATEADD(day, -@days, GETDATE())
-        GROUP BY p.id, p.name, p.sku
+          p.ID_Producto as id,
+          p.Descripcion as name,
+          p.Pr_Ean13 as sku,
+          SUM(dt.Cantidad) as total_quantity,
+          SUM(dt.Cantidad * dt.PrecioUnitario) as total_spent
+        FROM Productos p
+        INNER JOIN DetalleTomadePedido dt ON p.ID_Producto = dt.ID_Producto
+        INNER JOIN TomadePedido tp ON dt.ID_TomaPedido = tp.ID_TomaPedido
+        WHERE tp.ID_Cliente = @clientId
+          AND tp.Fecha >= DATEADD(day, -@days, GETDATE())
+        GROUP BY p.ID_Producto, p.Descripcion, p.Pr_Ean13
         ORDER BY total_quantity DESC
       `);
     res.json(result.recordset);
