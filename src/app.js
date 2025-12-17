@@ -13,6 +13,8 @@ const usersRouter = require('./routes/users');
 const statisticsRouter = require('./routes/statistics');
 const rubrosRouter = require('./routes/rubros');
 const catalogsRouter = require('./routes/catalogs');
+const repartidoresRouter = require('./routes/repartidores');
+const marcasRouter = require('./routes/marcas');
 
 app.use('/auth', authRouter);
 app.use('/providers', providersRouter);
@@ -23,6 +25,8 @@ app.use('/users', usersRouter);
 app.use('/statistics', statisticsRouter);
 app.use('/rubros', rubrosRouter);
 app.use('/catalogs', catalogsRouter);
+app.use('/repartidores', repartidoresRouter);
+app.use('/marcas', marcasRouter);
 
 app.use((err, req, res, next) => {
   console.error(err);

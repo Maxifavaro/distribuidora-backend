@@ -34,7 +34,8 @@ router.get('/', async (req, res, next) => {
         p.Pr_UniXPack,
         p.Estado,
         p.OcultarApp,
-        p.SinStockApp
+        p.SinStockApp,
+        p.PermiteDescuento as permite_descuento
       FROM Productos p
       LEFT JOIN Proveedores prov ON p.ID_Proveedor = prov.ID_Proveedor
       LEFT JOIN Rubros r ON p.ID_Rubro = r.id_rubro
@@ -78,7 +79,7 @@ router.post('/', auth, requireRole('admin'), async (req, res, next) => {
     const { 
       name, sku, price, stock, provider_id, rubro_id, marca_id, alicuota_id,
       costo, costoUnit, margen, precioFinalPack, precioNetoPack, precioNetoUni,
-      montoIVA, pmr, pack, uniXPack, estado
+      montoIVA, pmr, pack, uniXPack, estado, permite_descuento
     } = req.body;
     
     const pool = await poolPromise;
@@ -102,16 +103,17 @@ router.post('/', auth, requireRole('admin'), async (req, res, next) => {
       .input('Pr_Pack', sql.NVarChar(3), pack || 'UN')
       .input('Pr_UniXPack', sql.Int, uniXPack || 1)
       .input('Estado', sql.NVarChar(50), estado || 'Activo')
+      .input('PermiteDescuento', sql.Bit, permite_descuento !== undefined ? permite_descuento : true)
       .query(`
         INSERT INTO Productos (
           Descripcion, Pr_Ean13, PrecioFinalUni, Stock, ID_Proveedor, ID_Rubro,
           idMarca, IdAlicIva, Costo, CostoUnit, margen, PrecioFinalPack,
-          PrecioNetoPack, PrecioNetoUni, MontoIVA, PMR, Pr_Pack, Pr_UniXPack, Estado
+          PrecioNetoPack, PrecioNetoUni, MontoIVA, PMR, Pr_Pack, Pr_UniXPack, Estado, PermiteDescuento
         ) OUTPUT INSERTED.ID_Producto
         VALUES (
           @Descripcion, @Pr_Ean13, @PrecioFinalUni, @Stock, @ID_Proveedor, @ID_Rubro,
           @idMarca, @IdAlicIva, @Costo, @CostoUnit, @margen, @PrecioFinalPack,
-          @PrecioNetoPack, @PrecioNetoUni, @MontoIVA, @PMR, @Pr_Pack, @Pr_UniXPack, @Estado
+          @PrecioNetoPack, @PrecioNetoUni, @MontoIVA, @PMR, @Pr_Pack, @Pr_UniXPack, @Estado, @PermiteDescuento
         )
       `);
     
@@ -131,7 +133,7 @@ router.put('/:id', auth, requireRole('admin'), async (req, res, next) => {
     const { 
       name, sku, price, stock, provider_id, rubro_id, marca_id, alicuota_id,
       costo, costoUnit, margen, precioFinalPack, precioNetoPack, precioNetoUni,
-      montoIVA, pmr, pack, uniXPack, estado
+      montoIVA, pmr, pack, uniXPack, estado, permite_descuento
     } = req.body;
     
     const pool = await poolPromise;
@@ -156,6 +158,7 @@ router.put('/:id', auth, requireRole('admin'), async (req, res, next) => {
       .input('Pr_Pack', sql.NVarChar(3), pack || 'UN')
       .input('Pr_UniXPack', sql.Int, uniXPack || 1)
       .input('Estado', sql.NVarChar(50), estado || 'Activo')
+      .input('PermiteDescuento', sql.Bit, permite_descuento !== undefined ? permite_descuento : true)
       .query(`
         UPDATE Productos SET
           Descripcion = @Descripcion,
@@ -176,7 +179,8 @@ router.put('/:id', auth, requireRole('admin'), async (req, res, next) => {
           PMR = @PMR,
           Pr_Pack = @Pr_Pack,
           Pr_UniXPack = @Pr_UniXPack,
-          Estado = @Estado
+          Estado = @Estado,
+          PermiteDescuento = @PermiteDescuento
         WHERE ID_Producto = @id
       `);
     
