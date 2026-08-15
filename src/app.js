@@ -2,6 +2,17 @@ require('dotenv').config();
 const express = require('express');
 const app = express();
 
+// Enable CORS for frontend (Vite and other origins)
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
+
 app.use(express.json());
 
 const providersRouter = require('./routes/providers');
@@ -15,8 +26,12 @@ const rubrosRouter = require('./routes/rubros');
 const catalogsRouter = require('./routes/catalogs');
 const repartidoresRouter = require('./routes/repartidores');
 const marcasRouter = require('./routes/marcas');
+const systemStructureRouter = require('./routes/system-structure');
+const dynamicRouter = require('./routes/dynamic');
 
 app.use('/auth', authRouter);
+app.use('/system-structure', systemStructureRouter);
+app.use('/dynamic', dynamicRouter);
 app.use('/providers', providersRouter);
 app.use('/clients', clientsRouter);
 app.use('/products', productsRouter);
